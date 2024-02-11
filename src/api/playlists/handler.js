@@ -1,4 +1,5 @@
 const autoBind = require('auto-bind');
+const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class PlaylistsHandler {
   constructor(playlistsService, collaborationsService, validator) {
@@ -123,6 +124,48 @@ class PlaylistsHandler {
       status: 'success',
       message: 'Playlist song berhasil dihapus',
     };
+  }
+
+  async getActivitiesHandler(request, h) {
+    const { id: playlistId } = request.params;
+    const { id: userId } = request.auth.credentials;
+
+    let statusCode = 200;
+    let responseData = {};
+
+    const playlistExists = await this._playlistsService.playlistExists(playlistId);
+    if (!playlistExists) {
+      statusCode = 404;
+      responseData = {
+        status: 'fail',
+        message: 'Playlist not found',
+      };
+    } else {
+      try {
+        await this._playlistsService.verifyPlaylistAccessForActivity(playlistId, userId);
+        const activities = await this._collaborationsService.getCollaborationActivities(playlistId);
+
+        responseData = {
+          status: 'success',
+          data: {
+            playlistId,
+            activities,
+          },
+        };
+      } catch (error) {
+        if (error instanceof AuthorizationError) {
+          statusCode = 403;
+          responseData = {
+            status: 'fail',
+            message: 'You are not authorized to view activities for this playlist',
+          };
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    return h.response(responseData).code(statusCode);
   }
 }
 

@@ -171,6 +171,18 @@ class PlaylistsService {
       }
     }
   }
+
+  async verifyPlaylistAccessForActivity(playlistId, userId) {
+    const playlistExists = await this.playlistExists(playlistId);
+    if (!playlistExists) {
+      throw new NotFoundError('Playlist not found');
+    }
+
+    const isCollaborator = await this._collaborationsService.verifyCollaborator(playlistId, userId);
+    if (!isCollaborator) {
+      throw new AuthorizationError('You are not authorized to view activities for this playlist');
+    }
+  }
 }
 
 module.exports = PlaylistsService;
