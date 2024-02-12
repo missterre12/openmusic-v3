@@ -1,4 +1,5 @@
 /* eslint-disable no-useless-catch */
+/* eslint-disable max-len */
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
@@ -119,27 +120,32 @@ class PlaylistsService {
   }
 
   async verifyPlaylistOwner(playlistId, owner) {
-    const query = {
-      text: `
-                SELECT p.owner as owner, c.user_id as user_id
-                FROM playlists p
-                LEFT JOIN collaborations c ON p.id = c.playlist_id AND c.user_id = $1
-                WHERE p.id = $2
-            `,
-      values: [owner, playlistId],
-    };
+    try {
+      const query = {
+        text: `
+          SELECT p.owner as owner, c.user_id as user_id
+          FROM playlists p
+          LEFT JOIN collaborations c ON p.id = c.playlist_id AND c.user_id = $1
+          WHERE p.id = $2
+        `,
+        values: [owner, playlistId],
+      };
 
-    const result = await this._pool.query(query);
-    if (result.rows.length === 0) {
-      throw new NotFoundError('Playlist not found');
-    }
+      const result = await this._pool.query(query);
 
-    const playlist = result.rows[0];
-    if (!playlist.owner) {
-      throw new NotFoundError('Playlist has no owner');
-    }
-    if (playlist.owner !== owner && playlist.user_id !== owner) {
-      throw new AuthorizationError('You are not authorized to modify this playlist');
+      if (result.rows.length === 0) {
+        throw new NotFoundError('Playlist not found');
+      }
+
+      const playlist = result.rows[0];
+      if (!playlist.owner) {
+        throw new NotFoundError('Playlist has no owner');
+      }
+      if (playlist.owner !== owner && playlist.user_id !== owner) {
+        throw new AuthorizationError('You are not authorized to modify this playlist');
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -173,14 +179,18 @@ class PlaylistsService {
   }
 
   async verifyPlaylistAccessForActivity(playlistId, userId) {
-    const playlistExists = await this.playlistExists(playlistId);
-    if (!playlistExists) {
-      throw new NotFoundError('Playlist not found');
-    }
+    try {
+      const playlistExists = await this.getPlaylistById(playlistId);
+      if (!playlistExists) {
+        throw new NotFoundError('Playlist not found');
+      }
 
-    const isCollaborator = await this._collaborationsService.verifyCollaborator(playlistId, userId);
-    if (!isCollaborator) {
-      throw new AuthorizationError('You are not authorized to view activities for this playlist');
+      const isCollaborator = await this._collaborationsService.verifyCollaborator(playlistId, userId);
+      if (!isCollaborator) {
+        throw new AuthorizationError('You are not authorized to view activities for this playlist');
+      }
+    } catch (error) {
+      throw error;
     }
   }
 }

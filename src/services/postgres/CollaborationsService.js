@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
+const NotFoundError = require('../../exceptions/NotFoundError');
 
 class CollaborationsService {
   constructor() {
@@ -44,9 +45,11 @@ class CollaborationsService {
 
     const result = await this._pool.query(query);
 
-    if (!result.rows.length) {
-      throw new InvariantError('Kolaborasi gagal diverifikasi');
+    if (result.rows.length === 0) {
+      throw new NotFoundError('Collaborator not found');
     }
+
+    return true;
   }
 
   async getCollaborationActivities(playlistId) {
