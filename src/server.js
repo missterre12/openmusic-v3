@@ -140,6 +140,7 @@ const init = async () => {
       options: {
         collaborationsService,
         playlistsService,
+        usersService,
         validator: CollaborationsValidator,
       },
     },
@@ -155,7 +156,7 @@ const init = async () => {
 
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
-    console.log(response);
+    // console.log(response);
 
     if (response instanceof Error) {
       if (response instanceof ClientError) {
