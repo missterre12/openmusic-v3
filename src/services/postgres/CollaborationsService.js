@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const { nanoid } = require('nanoid');
 const InvariantError = require('../../exceptions/InvariantError');
-const NotFoundError = require('../../exceptions/NotFoundError');
+const AuthorizationError = require('../../exceptions/AuthorizationError');
 
 class CollaborationsService {
   constructor(cacheService) {
@@ -47,30 +47,10 @@ class CollaborationsService {
     const result = await this._pool.query(query);
 
     if (result.rows.length === 0) {
-      throw new NotFoundError('Collaborator not found');
+      throw new AuthorizationError('User is not authorized');
     }
 
     return true;
-  }
-
-  async getCollaborationActivities(playlistId) {
-    const query = {
-      text: 'SELECT * FROM playlist_song_activities WHERE playlist_id = $1',
-      values: [playlistId],
-    };
-
-    const result = await this._pool.query(query);
-
-    if (!result.rows.length) {
-      return [];
-    }
-
-    return result.rows.map((row) => ({
-      username: row.username,
-      title: row.title,
-      action: row.action,
-      time: row.time,
-    }));
   }
 
   async addCollaborationActivity(playlistId, songId, userId, action) {
@@ -88,19 +68,6 @@ class CollaborationsService {
     }
 
     return result.rows[0].id;
-  }
-
-  async deleteCollaborationActivity(playlistId, songId, userId, action) {
-    const query = {
-      text: 'DELETE FROM playlist_song_activities WHERE playlist_id = $1 AND song_id = $2 AND user_id = $3 AND action = $4 RETURNING id',
-      values: [playlistId, songId, userId, action],
-    };
-
-    const result = await this._pool.query(query);
-
-    if (!result.rows.length) {
-      throw new InvariantError('Aktivitas kolaborasi gagal dihapus');
-    }
   }
 }
 

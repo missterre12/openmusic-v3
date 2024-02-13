@@ -97,11 +97,9 @@ class AlbumsService {
   }
 
   async addCover(id, filename) {
-    const fileUrl = `${process.env.HOST}:${process.env.PORT}/upload/coverAlbums/${filename}`;
-
     const query = {
       text: 'UPDATE albums SET "coverUrl" = $1 WHERE id = $2 RETURNING id',
-      values: [fileUrl, id],
+      values: [filename, id],
     };
 
     const result = await this._pool.query(query);

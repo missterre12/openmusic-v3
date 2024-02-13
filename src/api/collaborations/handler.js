@@ -16,7 +16,7 @@ class CollaborationsHandler {
     const { playlistId, userId } = request.payload;
 
     await this._usersService.getUserById(userId);
-    await this._playlistsService.verifyPlaylistOwner(credentialId, playlistId);
+    await this._playlistsService.verifyPlaylistOwner(playlistId, credentialId);
     const collaborationId = await this._collaborationsService.addCollaboration(
       playlistId,
       userId,
@@ -35,37 +35,16 @@ class CollaborationsHandler {
 
   async deleteCollaborationHandler(request) {
     this._validator.validateCollaborationPayload(request.payload);
-    const { id: username } = request.auth.credentials;
+    const { id: owner } = request.auth.credentials;
     const { playlistId, userId } = request.payload;
 
-    await this._playlistsService.verifyPlaylistOwner(playlistId, username);
+    await this._playlistsService.verifyPlaylistOwner(playlistId, owner);
     await this._collaborationsService.deleteCollaboration(playlistId, userId);
-
-    await this._collaborationsService.deleteCollaborationActivity(
-      playlistId,
-      userId,
-      null,
-      'delete',
-    );
 
     return {
       status: 'success',
       message: 'Kolaborasi berhasil dihapus',
     };
-  }
-
-  async getCollaborationActivitiesHandler(request, h) {
-    const { id: playlistId } = request.params;
-
-    const activities = await this._collaborationsService.getCollaborationActivities(playlistId);
-
-    return h.response({
-      status: 'success',
-      data: {
-        playlistId,
-        activities,
-      },
-    });
   }
 }
 

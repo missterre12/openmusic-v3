@@ -33,7 +33,7 @@ class PlaylistsService {
 
   async getPlaylists(owner) {
     const query = {
-      text: 'SELECT playlists.*, users.username FROM playlists INNER JOIN users ON playlists.owner=users.id WHERE playlists.owner = $1',
+      text: 'SELECT playlists.*, users.username FROM playlists INNER JOIN users ON playlists.owner = users.id LEFT JOIN collaborations c ON playlists.id = playlist_id WHERE playlists.owner = $1 OR c.user_id = $1',
       values: [owner],
     };
 
@@ -146,16 +146,12 @@ class PlaylistsService {
     try {
       const query = {
         text: `
-          SELECT p.owner as owner, c.user_id as user_id
-          FROM playlists p
-          LEFT JOIN collaborations c ON p.id = c.playlist_id AND c.user_id = $1
-          WHERE p.id = $2
+          SELECT owner FROM playlists WHERE id = $1
         `,
-        values: [owner, playlistId],
+        values: [playlistId],
       };
 
       const result = await this._pool.query(query);
-
       if (result.rows.length === 0) {
         throw new NotFoundError('Playlist not found');
       }
@@ -164,7 +160,7 @@ class PlaylistsService {
       if (!playlist.owner) {
         throw new NotFoundError('Playlist has no owner');
       }
-      if (playlist.owner !== owner && playlist.user_id !== owner) {
+      if (playlist.owner !== owner) {
         throw new AuthorizationError('You are not authorized to modify this playlist');
       }
     } catch (error) {
@@ -189,7 +185,7 @@ class PlaylistsService {
     try {
       await this.verifyPlaylistOwner(playlistId, userId);
     } catch (error) {
-      if (!(error instanceof NotFoundError)) {
+      if (error instanceof NotFoundError) {
         throw error;
       }
 
@@ -215,6 +211,26 @@ class PlaylistsService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getPlaylistsActivities(playlistId) {
+    const query = {
+      text: 'SELECT psa.*, u.username, s.title FROM playlist_song_activities psa INNER JOIN users u ON psa.user_id = u.id INNER JOIN songs s ON psa.song_id = s.id WHERE psa.playlist_id = $1',
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Playlist is not found');
+    }
+
+    return result.rows.map((row) => ({
+      username: row.username,
+      title: row.title,
+      action: row.action,
+      time: row.time,
+    }));
   }
 }
 
