@@ -1,8 +1,9 @@
 const autoBind = require('auto-bind');
 
 class AlbumsHandler {
-  constructor(service, validator) {
+  constructor(service, storageService, validator) {
     this._service = service;
+    this._storageService = storageService;
     this._validator = validator;
 
     autoBind(this);
@@ -65,6 +66,7 @@ class AlbumsHandler {
   async addCoverHandler(request, h) {
     const { id } = request.params;
     const { cover } = request.payload;
+    console.log(this._validator);
     this._validator.validateCover(cover.hapi.headers);
 
     const filename = await this._storageService.writeFile(cover, cover.hapi);

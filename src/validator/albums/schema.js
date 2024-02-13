@@ -17,6 +17,7 @@ const CoverSchema = Joi.object({
       'image/jpeg',
       'image/png',
       'image/webp',
+      'image/jpg',
     )
     .required(),
 }).unknown();

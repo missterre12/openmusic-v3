@@ -50,7 +50,7 @@ class AlbumsService {
       name: album.name,
       year: album.year,
       songs: resultSongs.rows,
-      coverUrl: album.cover || null,
+      coverUrl: album.coverUrl || null,
     };
 
     return result;
@@ -96,10 +96,12 @@ class AlbumsService {
     }
   }
 
-  async addCover(id, path) {
+  async addCover(id, filename) {
+    const fileUrl = `${process.env.HOST}:${process.env.PORT}/upload/coverAlbums/${filename}`;
+
     const query = {
-      text: 'UPDATE albums SET cover = $1 WHERE id = $2 RETURNING id',
-      values: [path, id],
+      text: 'UPDATE albums SET "coverUrl" = $1 WHERE id = $2 RETURNING id',
+      values: [fileUrl, id],
     };
 
     const result = await this._pool.query(query);
@@ -114,7 +116,7 @@ class AlbumsService {
 
     const queryLikeCheck = {
       text: `SELECT id FROM user_likes_album 
-      WHERE userid = $1 AND albumid = $2`,
+      WHERE user_id = $1 AND album_id = $2`,
       values: [userId, albumId],
     };
 
