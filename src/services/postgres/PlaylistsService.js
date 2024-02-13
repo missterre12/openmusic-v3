@@ -119,6 +119,29 @@ class PlaylistsService {
     }
   }
 
+  async getPlaylistSongsById(playlistId) {
+    const query = {
+      text: `
+            SELECT 
+                songs.id, 
+                songs.title, 
+                songs.performer
+            FROM playlists_songs
+            INNER JOIN songs ON playlists_songs.song_id = songs.id
+            WHERE playlist_id = $1
+            `,
+      values: [playlistId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Lagu dalam playlist tidak ditemukan');
+    }
+
+    return result.rows;
+  }
+
   async verifyPlaylistOwner(playlistId, owner) {
     try {
       const query = {

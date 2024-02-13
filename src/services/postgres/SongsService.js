@@ -80,12 +80,16 @@ class SongsService {
   }
 
   async searchSongs({ title, performer }) {
-    const query = 'SELECT id, title, performer FROM songs WHERE title ILIKE $1 AND performer ILIKE $2';
+    if (!title && !performer) {
+      throw new InvariantError('Harus menyediakan setidaknya judul atau penampil untuk pencarian lagu');
+    }
 
-    const result = await this._pool.query({
-      text: query,
-      values: [`%${title}%`, `%${performer}%`],
-    });
+    const query = {
+      text: 'SELECT id, title, performer FROM songs WHERE title ILIKE $1 AND performer ILIKE $2',
+      values: [`%${title || ''}%`, `%${performer || ''}%`],
+    };
+
+    const result = await this._pool.query(query);
     return result.rows.map(mapDBToModelSong);
   }
 }

@@ -167,6 +167,25 @@ class PlaylistsHandler {
 
     return h.response(responseData).code(statusCode);
   }
+
+  async getPlaylistActivitiesByIdHandler(request) {
+    const { id } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._playlistsService.verifyPlaylistAccess(id, credentialId);
+
+    const activities = await this._playlistsService.getPlaylistActivitiesById(
+      id,
+    );
+
+    return {
+      status: 'success',
+      data: {
+        playlistId: id,
+        activities,
+      },
+    };
+  }
 }
 
 module.exports = PlaylistsHandler;
